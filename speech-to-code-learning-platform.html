@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Speech to Code Learning Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <header class="bg-white shadow-md">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-semibold text-indigo-600">Speech2Code</h1>
+      <nav class="space-x-6 text-gray-700 font-medium hidden md:flex">
+        <a href="#" class="hover:text-indigo-600 transition">Home</a>
+        <a href="#" class="hover:text-indigo-600 transition">Tutorials</a>
+        <a href="#" class="hover:text-indigo-600 transition">About</a>
+        <a href="#" id="history-button" title="View History" class="hover:text-indigo-600 transition">
+          <i class="fas fa-history"></i>
+        </a>
+      </nav>
+      <button id="mobile-menu-button" class="md:hidden text-gray-700 focus:outline-none">
+        <i class="fas fa-bars fa-lg"></i>
+      </button>
+    </div>
+    <nav id="mobile-menu" class="hidden bg-white px-6 py-4 space-y-2 md:hidden">
+      <a href="#" class="block text-gray-700 font-medium hover:text-indigo-600 transition">Home</a>
+      <a href="#" class="block text-gray-700 font-medium hover:text-indigo-600 transition">Tutorials</a>
+      <a href="#" class="block text-gray-700 font-medium hover:text-indigo-600 transition">About</a>
+    </nav>
+  </header>
+
+  <main class="flex-grow container mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+    <section class="md:col-span-3 bg-white rounded-lg shadow p-6 flex flex-col">
+      <h2 class="text-xl font-semibold mb-4 text-indigo-600">Speak Your Code</h2>
+      <button id="start-stop-btn" class="mb-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition flex items-center justify-center space-x-2 focus:outline-none">
+        <i class="fas fa-microphone"></i>
+        <span id="btn-text">Start Listening</span>
+      </button>
+      <div class="flex-grow overflow-auto border border-gray-300 rounded p-4 bg-gray-100">
+        <pre id="code-output" class="text-sm font-mono text-gray-800"></pre>
+      </div>
+    </section>
+
+    <aside class="bg-white rounded-lg shadow p-6">
+      <h3 class="text-lg font-semibold mb-4 text-indigo-600">Learning Tips</h3>
+      <ul class="list-disc list-inside space-y-2 text-gray-700 text-sm">
+        <li>Speak clearly and use programming keywords.</li>
+        <li>Use indentation keywords like "indent" and "outdent".</li>
+        <li>Pause briefly between statements for better recognition.</li>
+        <li>Review the generated code and edit as needed.</li>
+        <li>Practice regularly to improve accuracy.</li>
+      </ul>
+    </aside>
+  </main>
+
+  <footer class="bg-white shadow-inner py-4 text-center text-gray-600 text-sm">
+    &copy; 2024 Speech2Code Learning Platform. All rights reserved.
+  </footer>
+
+  <script>
+    const startStopBtn = document.getElementById('start-stop-btn');
+    const btnText = document.getElementById('btn-text');
+    const codeOutput = document.getElementById('code-output');
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    let recognizing = false;
+    let recognition;
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      startStopBtn.disabled = true;
+      btnText.textContent = 'Speech Recognition Not Supported';
+    } else {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        recognizing = true;
+        btnText.textContent = 'Stop Listening';
+        startStopBtn.classList.add('bg-red-600');
+        startStopBtn.classList.remove('bg-indigo-600');
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+      };
+
+      recognition.onend = () => {
+        recognizing = false;
+        btnText.textContent = 'Start Listening';
+        startStopBtn.classList.remove('bg-red-600');
+        startStopBtn.classList.add('bg-indigo-600');
+      };
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = codeOutput.textContent || '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + '\n';
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        codeOutput.textContent = finalTranscript + interimTranscript;
+      };
+
+      startStopBtn.addEventListener('click', () => {
+        if (recognizing) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+    }
+
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+  </script>
+
+  <script>
+    // History modal creation and toggle
+    const historyButton = document.getElementById('history-button');
+
+    // Create modal elements
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+
+    const modalContent = document.createElement('div');
+    modalContent.className = 'bg-white rounded-lg shadow-lg max-w-lg w-full p-6 max-h-[80vh] overflow-auto';
+
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'flex justify-between items-center mb-4';
+
+    const modalTitle = document.createElement('h4');
+    modalTitle.className = 'text-lg font-semibold text-indigo-600';
+    modalTitle.textContent = 'Speech History';
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'text-gray-600 hover:text-gray-900 focus:outline-none';
+    closeButton.innerHTML = '<i class="fas fa-times fa-lg"></i>';
+
+    modalHeader.appendChild(modalTitle);
+    modalHeader.appendChild(closeButton);
+
+    const modalBody = document.createElement('div');
+    modalBody.className = 'text-gray-700 text-sm';
+
+    modalContent.appendChild(modalHeader);
+    modalContent.appendChild(modalBody);
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
+
+    // History storage
+    let speechHistory = [];
+
+    // Update modal body with history items
+    function updateHistory() {
+      if (speechHistory.length === 0) {
+        modalBody.innerHTML = '<p class="italic text-gray-500">No history available.</p>';
+        return;
+      }
+      modalBody.innerHTML = '';
+      speechHistory.forEach((item, index) => {
+        const entry = document.createElement('div');
+        entry.className = 'mb-3 border-b border-gray-200 pb-2';
+        entry.textContent = item;
+        modalBody.appendChild(entry);
+      });
+    }
+
+    // Show modal
+    function showModal() {
+      updateHistory();
+      modalOverlay.classList.remove('hidden');
+    }
+
+    // Hide modal
+    function hideModal() {
+      modalOverlay.classList.add('hidden');
+    }
+
+    // Event listeners
+    historyButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      showModal();
+    });
+
+    closeButton.addEventListener('click', hideModal);
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        hideModal();
+      }
+    });
+
+    // Modify recognition onresult to save final transcripts to history
+    const originalOnResult = recognition ? recognition.onresult : null;
+    if (recognition) {
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = codeOutput.textContent || '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            const finalText = event.results[i][0].transcript.trim();
+            finalTranscript += finalText + '\n';
+            // Save to history
+            speechHistory.unshift(finalText);
+            if (speechHistory.length > 20) {
+              speechHistory.pop();
+            }
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        codeOutput.textContent = finalTranscript + interimTranscript;
+      };
+    }
+  </script>
+</body>
+</html>
